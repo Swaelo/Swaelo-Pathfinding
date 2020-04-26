@@ -234,19 +234,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d317f20d19058b149860c61bd3a5e147, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  GridSetupWindow: {fileID: 84855086}
   WidthInput: {fileID: 1907736511}
-  MaxWidth: 128
   HeightInput: {fileID: 2122832935}
-  MaxHeight: 128
   NodePrefab: {fileID: 7806904125080680418, guid: 51f09fc8b636c114eb7b848fb20c8125,
     type: 3}
-  NodeSpacing: 1.085
-  SetupUI: {fileID: 84855086}
-  PathStartNode: {fileID: 0}
-  PathEndNode: {fileID: 0}
+  PathStart: {fileID: 0}
+  PathEnd: {fileID: 0}
   QuickSetup: 1
-  QuickWidth: 25
-  QuickHeight: 25
+  QuickSetupSize: {x: 15, y: 15}
+  QuickStartPos: {x: 2, y: 2}
+  QuickEndPos: {x: 13, y: 13}
 --- !u!4 &121272823
 Transform:
   m_ObjectHideFlags: 0
@@ -1260,7 +1258,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 121272822}
-        m_MethodName: FindPathButtonFunction
+        m_MethodName: ClickFindPath
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1546,7 +1544,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 121272822}
-        m_MethodName: ConfirmGridSize
+        m_MethodName: ClickSetupGrid
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2015,7 +2013,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 121272822}
-        m_MethodName: NewWidthEntered
+        m_MethodName: DimensionsUpdated
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2244,7 +2242,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 121272822}
-        m_MethodName: NewHeightEntered
+        m_MethodName: DimensionsUpdated
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2386,20 +2384,25 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2920960160142471972, guid: 51f09fc8b636c114eb7b848fb20c8125,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5482481882656111897, guid: 51f09fc8b636c114eb7b848fb20c8125,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2.0231128
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 5482481882656111897, guid: 51f09fc8b636c114eb7b848fb20c8125,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5.4136686
+      value: 5
       objectReference: {fileID: 0}
     - target: {fileID: 5482481882656111897, guid: 51f09fc8b636c114eb7b848fb20c8125,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: -2.0989685
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 5482481882656111897, guid: 51f09fc8b636c114eb7b848fb20c8125,
         type: 3}

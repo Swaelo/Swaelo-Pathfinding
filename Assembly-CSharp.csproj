@@ -64,9 +64,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\AStarPathFinder.cs" />
+    <Compile Include="Assets\Scripts\Direction.cs" />
     <Compile Include="Assets\Scripts\GridManager.cs" />
     <Compile Include="Assets\Scripts\Node.cs" />
     <Compile Include="Assets\Scripts\NodeInteraction.cs" />
+    <Compile Include="Assets\Scripts\NodeMaterial.cs" />
+    <Compile Include="Assets\Scripts\NodeType.cs" />
     <Reference Include="Unity.Timeline.Editor">
       <HintPath>C:/Users/Swaelo/Desktop/Swaelo-Pathfinding/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>

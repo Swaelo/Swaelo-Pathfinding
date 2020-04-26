@@ -15,209 +15,174 @@ public class GridManager : MonoBehaviour
     public static GridManager Instance = null;
     private void Awake() { Instance = this; }
 
-    public InputField WidthInput; //UI Element where users inputs the desired grid width
-    public int MaxWidth = 128;  //Maximum grid width allowed
-    public InputField HeightInput;    //Users inputs desired grid height
-    public int MaxHeight = 128; //Maximum grid height allowed
-    public GameObject NodePrefab;   //Prefab used to create the grid
+    //UI Elements
+    public GameObject GridSetupWindow;  //Set of UI elements used to initially setup the level grid
+    public InputField WidthInput;   //Input fields to enter desired grid size
+    public InputField HeightInput;
+    private int MaxGridSize = 128;  //Grid size limitation
 
-    public float NodeSpacing = 1.085f;  //How much space to place between each grid node
+    //Level Grid
+    private Vector2 GridSize = new Vector2(2, 2);   //Width/Height of the grid stored here once initialized through UI
+    public GameObject NodePrefab;   //Grid node prefab used when setting up
+    private float NodeSpacing = 1.085f; //Space between each node in the grid
+    public List<List<GameObject>> Nodes; //All grid nodes stored in this 2d list once initialized
 
-    public GameObject SetupUI; //UI components used to setup the grid array, so they can be hidden once its been setup
+    //Pathway Nodes
+    public Node PathStart = null;
+    public Node PathEnd = null;
 
-    //Grid Nodes
-    private int GridWidth;
-    private int GridHeight;
-    public List<List<GameObject>> GridNodes;   //Array of grid nodes
+    //Quick setup for rapid testing
+    public bool QuickSetup = false; //If true, immediatly setups up grid with specified size on scene load
+    public Vector2 QuickSetupSize = new Vector2(15, 15);    //Size of grid for use with quick setup
+    public Vector2 QuickStartPos = new Vector2(2, 2);   //Position of path start node for quick setup
+    public Vector2 QuickEndPos = new Vector2(14, 14);   //Pos of path end for quick setup
 
-    //Current special nodes
-    public GameObject PathStartNode = null;
-    public GameObject PathEndNode = null;
-
-    //Fast setup for rabid debugging
-    public bool QuickSetup = false;
-    public int QuickWidth = 5;
-    public int QuickHeight = 5;
     private void Start()
     {
-        if (QuickSetup)
+        //Override with quick setup settings when quick setup is enabled
+        if(QuickSetup)
         {
-            SetupGrid(QuickWidth, QuickHeight);
-            GetNode(new Vector2(0, 0)).SetNodeType(NodeType.PathStart);
-            GetNode(new Vector2(QuickWidth - 1, QuickHeight - 1)).SetNodeType(NodeType.PathEnd);
-            for (int i = 0; i < QuickWidth-1; i++)
-                GetNode(new Vector2(i, 1)).SetNodeType(NodeType.WallNode);
-            for (int i = QuickWidth-1; i > 0; i--)
-                GetNode(new Vector2(i, QuickHeight-2)).SetNodeType(NodeType.WallNode);
+            GridSize = QuickSetupSize;
+            InitializeGrid();
+            PathStart = GetNode(QuickStartPos);
+            PathStart.SetType(NodeType.Start);
+            PathEnd = GetNode(QuickEndPos);
+            PathEnd.SetType(NodeType.End);
         }
     }
-    
-    //Called by UI Input Field when user finishes entering a new grid width
-    public void NewWidthEntered()
-    {
-        //Make sure current width is a positive value, and doesnt go above the max width
-        int CurrentWidth = Convert.ToInt32(WidthInput.text);
-        CurrentWidth = Mathf.Clamp(CurrentWidth, 0, MaxWidth);
-        WidthInput.text = CurrentWidth.ToString();
-    }
 
-    //Called by UI Input Field when user finishes entering a new grid height
-    public void NewHeightEntered()
+    //UI specific functions to make sure grid dimensions entered in stay within max limits
+    public void DimensionsUpdated()
     {
-        //Make sure current height remains inside allowed value range
-        int CurrentHeight = Convert.ToInt32(HeightInput.text);
-        CurrentHeight = Mathf.Clamp(CurrentHeight, 0, MaxHeight);
-        HeightInput.text = CurrentHeight.ToString();
-    }
-
-    //Called by UI button once user has entered the desired grid size
-    public void ConfirmGridSize()
-    {
-        //Make sure both inputfields have some value entered into them
-        if(WidthInput.text == "" || HeightInput.text == "")
+        if(WidthInput.text != "")
         {
-            Debug.Log("No grid size entered.");
+            //Fetch and store new grid width entered into UI input field
+            GridSize.x = Convert.ToInt32(WidthInput.text);
+            //Make sure it remains within size limits
+            GridSize.x = Mathf.Clamp(GridSize.x, 2, MaxGridSize);
+            //Update UI with clamped size value
+            WidthInput.text = GridSize.x.ToString();
+        }
+        //Do all the same thing if with height input too
+        if(HeightInput.text != "")
+        {
+            GridSize.y = Convert.ToInt32(HeightInput.text);
+            GridSize.y = Mathf.Clamp(GridSize.y, 2, MaxGridSize);
+            HeightInput.text = GridSize.y.ToString();
+        }
+    }
+
+    //UI button function to finish grid setup
+    public void ClickSetupGrid()
+    {
+        InitializeGrid();
+    }
+
+    //UI button function to initiate pathfinding between the start and end nodes
+    public void ClickFindPath()
+    {
+        //Make sure start and end nodes have been set
+        if(PathStart == null || PathEnd == null)
+        {
+            Debug.Log("Path ends need to be set before a path can be found.");
             return;
         }
 
-        //Get the desired grid size
-        GridWidth = Convert.ToInt32(WidthInput.text);
-        GridHeight = Convert.ToInt32(HeightInput.text);
-
-        //Setup the grid
-        SetupGrid(GridWidth, GridHeight);
+        AStarPathFinder.Instance.FindPath(PathStart, PathEnd);
     }
 
-    //Sets up the grid with the specified size
-    private void SetupGrid(int Width, int Height)
+    //Sets up the level grid
+    private void InitializeGrid()
     {
-        GridWidth = Width;
-        GridHeight = Height;
+        //Reposition the camera so the entire grid will remain in view
+        float MaxGridSize = Mathf.Max(GridSize.x, GridSize.y);
+        Camera.main.transform.position = new Vector3(0f, MaxGridSize + 3, 0f);
 
-        //Reposition the camera so the entire grid is in view
-        int GridAbs = GridWidth > GridHeight ? GridWidth : GridHeight;
-        Vector3 NewCameraPos = new Vector3(0f, GridAbs + 3, 0f);
-        Camera.main.transform.position = NewCameraPos;
+        //Initialize the storage lists
+        Nodes = new List<List<GameObject>>();
+        for (int i = 0; i < GridSize.x; i++)
+            Nodes.Add(new List<GameObject>());
 
-        //Initialize storage lists
-        GridNodes = new List<List<GameObject>>();
-        for (int i = 0; i < GridWidth; i++)
+        //Setup the grid nodes
+        Vector3 SpawnPos = new Vector3(-(GridSize.x * 0.5f * NodeSpacing), 0f, -(GridSize.y * 0.5f * NodeSpacing));
+        for (int Column = 0; Column < GridSize.x; Column++)
         {
-            //Place each row into the list
-            List<GameObject> RowList = new List<GameObject>();
-            GridNodes.Add(RowList);
-        }
-
-        //Spawn in all the grid nodes
-        Vector3 SpawnPos = new Vector3(-(GridWidth * 0.5f * NodeSpacing), 0f, -(GridHeight * 0.5f * NodeSpacing));
-        for (int w = 0; w < GridWidth; w++)
-        {
-            for (int h = 0; h < GridHeight; h++)
+            for (int Row = 0; Row < GridSize.y; Row++)
             {
-                //Spawn in the next node
-                GameObject NodeSpawn = Instantiate(NodePrefab, SpawnPos, Quaternion.identity);
+                //Spawn in each new node, assign them their grid coordinates, then store them in the lists with the others
+                GameObject Node = Instantiate(NodePrefab, SpawnPos, Quaternion.identity);
+                Node.GetComponent<Node>().NodePos = new Vector2(Column, Row);
+                Nodes[Column].Add(Node);
 
-                //Place it in the storage list
-                GridNodes[w].Add(NodeSpawn);
-
-                //Tell it its position in the grid
-                NodeSpawn.GetComponent<Node>().NodePos = new Vector2(w, h);
-
-                //Offset z pos for next spawn
+                //Offset Z position for next node spawn
                 SpawnPos.z += NodeSpacing;
             }
 
-            //Offset x pos for next spawn and reset z pos
+            //Offset X position and reset Z position for next row of spawns
             SpawnPos.x += NodeSpacing;
-            SpawnPos.z = -(GridHeight * 0.5f * NodeSpacing);
+            SpawnPos.z = -(GridSize.y * 0.5f * NodeSpacing);
         }
 
-        //Hide the grid setup UI
-        SetupUI.SetActive(false);
+        //Hide setup UI elements now that the grid has been initialized
+        GridSetupWindow.SetActive(false);
     }
 
-    //Called by node details script when it detects its been assigned as a new path start/end node
-    public void AssignStartNode(GameObject NewStartNode)
+    //Resets pathfinding values of all nodes in the grid
+    public void ResetAllPathValues()
     {
-        if (PathStartNode != null)
-            PathStartNode.GetComponent<Node>().SetNodeType(NodeType.PathNode);
-        PathStartNode = NewStartNode;
-    }
-    public void AssignEndNode(GameObject NewEndNode)
-    {
-        if (PathEndNode != null)
-            PathEndNode.GetComponent<Node>().SetNodeType(NodeType.PathNode);
-        PathEndNode = NewEndNode;
-    }
-
-    //Finds path between the start and end nodes
-    public void FindPathButtonFunction()
-    {
-        //Make sure a valid start and end node have been set
-        if (PathStartNode == null || PathEndNode == null)
-            return;
-
-        //Find the pathway between the two nodes
-        Node Start = PathStartNode.GetComponent<Node>();
-        Node End = PathEndNode.GetComponent<Node>();
-
-        List<Node> Pathway = AStarPathFinder.Instance.FindPathWikipedia(Start, End);
-
-        //Highlight the pathway between the nodes
-        Pathway.Remove(Start);
-        Pathway.Remove(End);
-        foreach (Node PathwayNode in Pathway)
-            PathwayNode.SetNodeType(NodeType.PathWay);
-    }
-
-    //Resets the A* values of all nodes in the grid
-    public void ResetAStarValues()
-    {
-        foreach(List<GameObject> Row in GridNodes)
-        {
+        foreach (List<GameObject> Row in Nodes)
             foreach (GameObject Node in Row)
-                Node.GetComponent<Node>().ResetAStarValues();
-        }
+                Node.GetComponent<Node>().ResetPathValues();
     }
 
-    //Returns a list of the nodes traversable neighbouring nodes
-    public List<Node> GetTraversableNeighbours(Node Node)
+    //Returns a list of the nodes neighbours
+    public List<Node> GetNeighbours(Node Node)
     {
-        //Create a new list to store the traversable neighbours
         List<Node> Neighbours = new List<Node>();
-
-        //Get the coordinates of all the supposed neighbouring nodes
-        Vector2 NorthPos = new Vector2(Node.NodePos.x, Node.NodePos.y + 1);
-        Vector2 EastPos = new Vector2(Node.NodePos.x + 1, Node.NodePos.y);
-        Vector2 SouthPos = new Vector2(Node.NodePos.x, Node.NodePos.y - 1);
-        Vector2 WestPos = new Vector2(Node.NodePos.x - 1, Node.NodePos.y);
-
-        //Any traversable nodes that exist at these locations get added to the list of neighbours
-        if (NodeExists(NorthPos) && GetNode(NorthPos).Traversable())
-            Neighbours.Add(GetNode(NorthPos));
-        if (NodeExists(EastPos) && GetNode(EastPos).Traversable())
-            Neighbours.Add(GetNode(EastPos));
-        if (NodeExists(SouthPos) && GetNode(SouthPos).Traversable())
-            Neighbours.Add(GetNode(SouthPos));
-        if (NodeExists(WestPos) && GetNode(WestPos).Traversable())
-            Neighbours.Add(GetNode(WestPos));
-
-        //Return the final list of traversable neighbouring nodes
+        if (Node.HasNeighbour(Direction.North))
+            Neighbours.Add(Node.GetNeighbour(Direction.North));
+        if (Node.HasNeighbour(Direction.East))
+            Neighbours.Add(Node.GetNeighbour(Direction.East));
+        if (Node.HasNeighbour(Direction.South))
+            Neighbours.Add(Node.GetNeighbour(Direction.South));
+        if (Node.HasNeighbour(Direction.West))
+            Neighbours.Add(Node.GetNeighbour(Direction.West));
         return Neighbours;
     }
 
-    //Checks if a node of the given coordinates exists within the grid
-    private bool NodeExists(Vector2 NodePos)
+    //Returns a list of the nodes traversable neighbours
+    public List<Node> GetTraversableNeighbours(Node Node)
     {
-        if (NodePos.x < 0 || NodePos.x >= GridWidth ||
-            NodePos.y < 0 || NodePos.y >= GridHeight)
-            return false;
-        return true;
+        //Create a new list to store the neighbours
+        List<Node> Neighbours = new List<Node>();
+
+        //Add any existing (traversable) neighbours to the list
+        if (Node.HasTraversableNeighbour(Direction.North))
+            Neighbours.Add(Node.GetNeighbour(Direction.North));
+        if (Node.HasTraversableNeighbour(Direction.East))
+            Neighbours.Add(Node.GetNeighbour(Direction.East));
+        if (Node.HasTraversableNeighbour(Direction.South))
+            Neighbours.Add(Node.GetNeighbour(Direction.South));
+        if (Node.HasTraversableNeighbour(Direction.West))
+            Neighbours.Add(Node.GetNeighbour(Direction.West));
+
+        //Return the list of traversable neighbours that could be found
+        return Neighbours;
     }
 
-    //Returns the node with the given grid coordinates
-    private Node GetNode(Vector2 NodePos)
+    //Checks if there exists a node with the given grid coordinates
+    public bool NodeExists(Vector2 NodePos)
     {
-        return GridNodes[(int)NodePos.x][(int)NodePos.y].GetComponent<Node>();
+        bool NodeExists = true;
+        if (NodePos.x < 0 || NodePos.x >= GridSize.x || NodePos.y < 0 || NodePos.y >= GridSize.y)
+            NodeExists = false;
+        //Debug.Log("Does node " + NodePos.x + ", " + NodePos.y + " exist in grid of size " + GridSize.x + " x " + GridSize.y + (NodeExists ? "YEP" : "NOPE"));
+        return NodeExists;
+    }
+
+    //Returns a node from the grid which matches the given coordinates
+    public Node GetNode(Vector2 NodePos)
+    {
+        return Nodes[(int)NodePos.x][(int)NodePos.y].GetComponent<Node>();
     }
 }

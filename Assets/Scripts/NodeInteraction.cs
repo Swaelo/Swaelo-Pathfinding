@@ -4,7 +4,6 @@
 // Author:	    Harley Laurie https://www.github.com/Swaelo/
 // ================================================================================================================================
 
-using System.Collections.Generic;
 using UnityEngine;
 
 public class NodeInteraction : MonoBehaviour
@@ -18,14 +17,17 @@ public class NodeInteraction : MonoBehaviour
         {
             Node Node = GetHoveredNode();
             if (Node != null)
-                Node.SetNodeType(NodeType.PathNode);
+                Node.SetType(NodeType.Open);
         }
         //Ctrl+Left clicking nodes turns them into pathway start nodes
         else if(CtrlHeld && Input.GetMouseButtonDown(0))
         {
             Node Node = GetHoveredNode();
             if (Node != null)
-                Node.SetNodeType(NodeType.PathStart);
+            {
+                Node.SetType(NodeType.Start);
+                GridManager.Instance.PathStart = Node;
+            }
         }
 
         //Right clicking nodes turns them into wall nodes
@@ -33,14 +35,14 @@ public class NodeInteraction : MonoBehaviour
         {
             Node Node = GetHoveredNode();
             if (Node != null)
-                Node.SetNodeType(NodeType.WallNode);
+                Node.SetType(NodeType.Wall);
         }
         //Ctrl+Right clicking nodes turns them into pathway end nodes
         else if(CtrlHeld && Input.GetMouseButtonDown(1))
         {
             Node Node = GetHoveredNode();
             if (Node != null)
-                Node.SetNodeType(NodeType.PathEnd);
+                Node.SetType(NodeType.End);
         }
     }
 

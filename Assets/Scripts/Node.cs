@@ -6,71 +6,146 @@
 
 using UnityEngine;
 
-public enum NodeType
-{
-    PathNode = 0,   //Path nodes can be travelled across
-    WallNode = 1,    //Wall nodes cannot be travelled across
-    PathStart = 2,
-    PathEnd = 3,
-    PathWay = 4
-}
-
 public class Node : MonoBehaviour
 {
-    //A* variables
-    public Node CameFrom; //The node immediately preceding this one on the cheapest path from the starting node
-    public int GScore;    //The cost of the cheapest path from the starting node to this node
-    public int FScore;    //Current best guess as to how short a path from start to finish can be if it goes through this node
-    public void ResetAStarValues()
+    //Node type
+    public NodeType Type = NodeType.Open;
+
+    //Pathfinding values
+    public Vector2 NodePos; //This nodes position in the grid
+    public Node Parent; //Node preceding this on the cheapest path from the start
+    public float GScore;    //Cost to travel here from the start node along the shortest path
+    public float FScore;    //Current best guess as to how short a path from start to finish can be if it goes through this node
+
+    //Materials and renderer components
+    public NodeMaterial[] Materials;
+    public MeshRenderer Renderer;
+
+    //Arrow pointing to this nodes parent
+    public GameObject ParentIndicator;  //The arrow object
+    public void ToggleParentIndicator(bool Show) { ParentIndicator.SetActive(Show); }    //Sets the indicators visibility
+    public void PointIndicator(Direction At) { ParentIndicator.transform.rotation = Quaternion.Euler(0f, (float)At, 0f); }  //Points the indicator to face a certain way
+    public Direction GetDirection(Node Other)   //Returns what direction the Other node is in relation to this one
     {
-        CameFrom = null;
-        GScore = 9999999;
-        FScore = 9999999;
+        if (Other.NodePos.y > NodePos.y)
+            return Direction.North;
+        if (Other.NodePos.x > NodePos.x)
+            return Direction.East;
+        if (Other.NodePos.y < NodePos.y)
+            return Direction.South;
+        if (Other.NodePos.x < NodePos.x)
+            return Direction.West;
+        return Direction.North;
     }
 
-    //Node coordinates
-    public Vector2 NodePos;
-
-    //Rendering
-    public Material PathNodeMat;    //Material used for pathway nodes
-    public Material WallNodeMat;    //Materials used for wall nodes
-    public Material PathStartMat;
-    public Material PathEndMat;
-    public Material PathWayMat;
-
-    //Type
-    public NodeType Type = NodeType.PathNode;   //Tracks what type of node this is
-    //Sets the node to a specific type
-    public void SetNodeType(NodeType NewType)
+    //Resets all the pathfinding values in preperation for a new pathway search
+    public void ResetPathValues()
     {
+        Parent = null;
+        GScore = Mathf.Infinity;
+        FScore = Mathf.Infinity;
+    }
+
+    //Sets the node to a new type
+    public void SetType(NodeType NewType)
+    {
+        //Store the new type thats being set
         Type = NewType;
-        switch(Type)
+        //Update the material to match the new type given
+        string MaterialName = Type.ToString() + "Mat";
+        //Debug.Log("Setting material: " + MaterialName);
+        Renderer.material = GetMaterial(MaterialName);
+        //Tell the GridManager when settings pathway start/end nodes
+        if(NewType == NodeType.Start)
         {
-            case (NodeType.PathNode):
-                GetComponent<MeshRenderer>().material = PathNodeMat;
-                break;
-            case (NodeType.WallNode):
-                GetComponent<MeshRenderer>().material = WallNodeMat;
-                break;
-            case (NodeType.PathStart):
-                GetComponent<MeshRenderer>().material = PathStartMat;
-                GridManager.Instance.AssignStartNode(gameObject);
-                break;
-            case (NodeType.PathEnd):
-                GetComponent<MeshRenderer>().material = PathEndMat;
-                GridManager.Instance.AssignEndNode(gameObject);
-                break;
-            case (NodeType.PathWay):
-                GetComponent<MeshRenderer>().material = PathWayMat;
-                break;
+            //Ignore if trying to reset the same start node
+            if (GridManager.Instance.PathStart == this)
+                return;
+            //If theres already a previous start node, set that one back to an open node before setting this one to the start node
+            if (GridManager.Instance.PathStart != null)
+                GridManager.Instance.PathStart.SetType(NodeType.Open);
+            GridManager.Instance.PathStart = this;
+        }
+        else if(NewType == NodeType.End)
+        {
+            if (GridManager.Instance.PathEnd == this)
+                return;
+            if (GridManager.Instance.PathEnd != null)
+                GridManager.Instance.PathEnd.SetType(NodeType.Open);
+            GridManager.Instance.PathEnd = this;
         }
     }
 
-    //Checks if this node is traversable
-    public bool Traversable()
+    //Gets one of the nodes materials
+    private Material GetMaterial(string Name)
     {
-        if (Type == NodeType.WallNode)
+        //Search through all the materials in the nodes material list
+        for(int i = 0; i < Materials.Length; i++)
+        {
+            //Check the names until we find the requested material
+            NodeMaterial NodeMat = Materials[i];
+            if (NodeMat.Name == Name)
+                return NodeMat.Material;
+        }
+
+        Debug.Log("Couldnt find node material: " + Name);
+        return null;
+    }
+
+    //Checks if the node is traversable
+    public bool IsTraversable()
+    {
+        return Type != NodeType.Wall;
+    }
+
+    //Returns the grid coordinates of where one of this nodes neighbours would be
+    public Vector2 GetNeighbourPos(Direction NeighbourDirection)
+    {
+        //Start with current position
+        Vector2 NeighbourPos = NodePos;
+
+        //Offset in the specified direction
+        switch(NeighbourDirection)
+        {
+            case (Direction.North):
+                NeighbourPos.y += 1;
+                break;
+            case (Direction.East):
+                NeighbourPos.x += 1;
+                break;
+            case (Direction.South):
+                NeighbourPos.y -= 1;
+                break;
+            case (Direction.West):
+                NeighbourPos.x -= 1;
+                break;
+        }
+
+        //Return the position of the neighbour
+        return NeighbourPos;
+    }
+
+    //Checks if the node has an existing neighbour in the given direction
+    public bool HasNeighbour(Direction NeighbourDirection)
+    {
+        bool HasNeighbour = GridManager.Instance.NodeExists(GetNeighbourPos(NeighbourDirection));
+        return HasNeighbour;
+    }
+
+    //Checks if the node has a traversable neighbour in the given direction
+    public bool HasTraversableNeighbour(Direction NeighbourDirection)
+    {
+        if (!HasNeighbour(NeighbourDirection))
             return false;
-        return true;
+        return GridManager.Instance.GetNode(GetNeighbourPos(NeighbourDirection)).IsTraversable();
+    }
+
+    //Returns the nodes neighbour in the given direction
+    public Node GetNeighbour(Direction NeighbourDirection)
+    {
+        //Make sure the neighbour exists in that direction first
+        if(!HasNeighbour(NeighbourDirection))
+            return null;
+        return GridManager.Instance.GetNode(GetNeighbourPos(NeighbourDirection));
     }
 }
