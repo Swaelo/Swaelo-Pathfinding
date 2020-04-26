@@ -136,9 +136,12 @@ public class GridManager : MonoBehaviour
     }
 
     //Returns a list of the nodes neighbours
-    public List<Node> GetNeighbours(Node Node)
+    public List<Node> GetNeighbours(Node Node, bool IncludeDiagonals = false)
     {
+        //Create a new list to store all the neighboring nodes
         List<Node> Neighbours = new List<Node>();
+
+        //Start by adding the adjacent nodes in straight directions
         if (Node.HasNeighbour(Direction.North))
             Neighbours.Add(Node.GetNeighbour(Direction.North));
         if (Node.HasNeighbour(Direction.East))
@@ -147,27 +150,38 @@ public class GridManager : MonoBehaviour
             Neighbours.Add(Node.GetNeighbour(Direction.South));
         if (Node.HasNeighbour(Direction.West))
             Neighbours.Add(Node.GetNeighbour(Direction.West));
+
+        //Add diagonal neighbours if told to
+        if(IncludeDiagonals)
+        {
+            if (Node.HasNeighbour(Direction.NorthEast))
+                Neighbours.Add(Node.GetNeighbour(Direction.NorthEast));
+            if (Node.HasNeighbour(Direction.SouthEast))
+                Neighbours.Add(Node.GetNeighbour(Direction.SouthEast));
+            if (Node.HasNeighbour(Direction.SouthWest))
+                Neighbours.Add(Node.GetNeighbour(Direction.SouthWest));
+            if (Node.HasNeighbour(Direction.NorthWest))
+                Neighbours.Add(Node.GetNeighbour(Direction.NorthWest));
+        }
+
+        //Return the final list of neighbouring nodes
         return Neighbours;
     }
 
     //Returns a list of the nodes traversable neighbours
-    public List<Node> GetTraversableNeighbours(Node Node)
+    public List<Node> GetTraversableNeighbours(Node Node, bool IncludeDiagonals = false)
     {
-        //Create a new list to store the neighbours
-        List<Node> Neighbours = new List<Node>();
+        //Start by just grabbing all the neighbours, regardless of traversability
+        List<Node> Neighbours = GetNeighbours(Node, IncludeDiagonals);
 
-        //Add any existing (traversable) neighbours to the list
-        if (Node.HasTraversableNeighbour(Direction.North))
-            Neighbours.Add(Node.GetNeighbour(Direction.North));
-        if (Node.HasTraversableNeighbour(Direction.East))
-            Neighbours.Add(Node.GetNeighbour(Direction.East));
-        if (Node.HasTraversableNeighbour(Direction.South))
-            Neighbours.Add(Node.GetNeighbour(Direction.South));
-        if (Node.HasTraversableNeighbour(Direction.West))
-            Neighbours.Add(Node.GetNeighbour(Direction.West));
+        //Now sort through this list, finding any which are traversable, adding those to a new 2nd list
+        List<Node> TraversableNeighbours = new List<Node>();
+        foreach (Node Neighbour in Neighbours)
+            if (Neighbour.IsTraversable())
+                TraversableNeighbours.Add(Neighbour);
 
-        //Return the list of traversable neighbours that could be found
-        return Neighbours;
+        //Finally return the list of neighbours which were found to be traversable
+        return TraversableNeighbours;
     }
 
     //Checks if there exists a node with the given grid coordinates
@@ -176,7 +190,6 @@ public class GridManager : MonoBehaviour
         bool NodeExists = true;
         if (NodePos.x < 0 || NodePos.x >= GridSize.x || NodePos.y < 0 || NodePos.y >= GridSize.y)
             NodeExists = false;
-        //Debug.Log("Does node " + NodePos.x + ", " + NodePos.y + " exist in grid of size " + GridSize.x + " x " + GridSize.y + (NodeExists ? "YEP" : "NOPE"));
         return NodeExists;
     }
 

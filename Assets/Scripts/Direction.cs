@@ -7,7 +7,11 @@
 public enum Direction
 {
     North = 90,
+    NorthEast = 135,
     East = 180,
-    South = -90,
-    West = -180
+    SouthEast = 225,
+    South = 270,
+    SouthWest = 315,
+    West = 0,
+    NorthWest = 45
 }

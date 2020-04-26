@@ -13,6 +13,9 @@ public class AStarPathFinder : MonoBehaviour
     public static AStarPathFinder Instance = null;
     private void Awake() { Instance = this; }
 
+    //Configuration settings
+    public bool AllowDiagonalTravel = false;
+
     //Pathway start/end nodes, and everything in between
     private Node Start; //Where the pathway begins
     private Node End;   //Where the pathway ends
@@ -52,7 +55,7 @@ public class AStarPathFinder : MonoBehaviour
 
         //Calculate starting nodes initial values and add it into the open set
         Start.GScore = 0;
-        Start.FScore = ManhattanHeuristic(Start, End);
+        Start.FScore = AllowDiagonalTravel ? DiagonalHeuristic(Start, End) : ManhattanHeuristic(Start, End);
         OpenSet.Add(Start);
 
         //Allow the update function to handle the rest of the pathfinding process
@@ -91,7 +94,7 @@ public class AStarPathFinder : MonoBehaviour
 
         //Remove the current node from the open set, then iterate over all of its neighbours
         OpenSet.Remove(Current);
-        List<Node> TraversableNeighbours = GridManager.Instance.GetTraversableNeighbours(Current);
+        List<Node> TraversableNeighbours = GridManager.Instance.GetTraversableNeighbours(Current, AllowDiagonalTravel);
         foreach (Node Neighbour in TraversableNeighbours)
         {
             //Check if its cheaper to travel across this neighbour
@@ -103,7 +106,7 @@ public class AStarPathFinder : MonoBehaviour
                 Neighbour.ToggleParentIndicator(true);
                 Neighbour.PointIndicator(Neighbour.GetDirection(Current));
                 Neighbour.GScore = TentativeGScore;
-                Neighbour.FScore = Neighbour.GScore + ManhattanHeuristic(Neighbour, End);
+                Neighbour.FScore = Neighbour.GScore + (AllowDiagonalTravel ? DiagonalHeuristic(Neighbour, End) : ManhattanHeuristic(Neighbour, End));
                 //Add this to the openset if its not already
                 if (!OpenSet.Contains(Neighbour))
                     OpenSet.Add(Neighbour);
