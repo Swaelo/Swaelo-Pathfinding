@@ -1,6 +1,6 @@
 ﻿// ================================================================================================================================
 // File:        AStarPathFinder.cs
-// Description:	Uses A* to find a path between two nodes, based on pseudocode https://en.wikipedia.org/wiki/A*_search_algorithm
+// Description:	Uses A* to find a path between two nodes, based on pseudocode from https://en.wikipedia.org/wiki/A*_search_algorithm
 // Author:	    Harley Laurie https://www.github.com/Swaelo/
 // ================================================================================================================================
 
@@ -13,9 +13,6 @@ public class AStarPathFinder : MonoBehaviour
     public static AStarPathFinder Instance = null;
     private void Awake() { Instance = this; }
 
-    //Configuration settings
-    public bool AllowDiagonalTravel = false;
-
     //Pathway start/end nodes, and everything in between
     private Node Start; //Where the pathway begins
     private Node End;   //Where the pathway ends
@@ -23,8 +20,8 @@ public class AStarPathFinder : MonoBehaviour
 
     //Pathfinding visualization
     private bool FindingPathway = false;    //Tracks when pathway is currently being searched
-    private float StepInterval = 0.025f;    //Time between each openset iteration
-    private float NextStep = 0.025f;    //Time until next openset iteration
+    private float StepInterval = 0.005f;    //Time between each openset iteration
+    private float NextStep = 0.005f;    //Time until next openset iteration
     private int OpenSetIterations = 0;  //Iterations taken so far to generate the complete pathway
 
     private void Update()
@@ -47,15 +44,13 @@ public class AStarPathFinder : MonoBehaviour
         this.Start = Start;
         this.End = End;
 
-        Debug.Log("Finding pathway from " + Start.NodePos.x + ", " + Start.NodePos.y + " to " + End.NodePos.x + ", " + End.NodePos.y);
-
         //Reset the values of all nodes, and reset the openset list
         GridManager.Instance.ResetAllPathValues();
         OpenSet = new List<Node>();
 
         //Calculate starting nodes initial values and add it into the open set
         Start.GScore = 0;
-        Start.FScore = AllowDiagonalTravel ? DiagonalHeuristic(Start, End) : ManhattanHeuristic(Start, End);
+        Start.FScore = GridManager.FindHeuristic(Start, End);
         OpenSet.Add(Start);
 
         //Allow the update function to handle the rest of the pathfinding process
@@ -70,7 +65,7 @@ public class AStarPathFinder : MonoBehaviour
         //If the open set is empty, then no pathway was able to be found
         if (OpenSet.Count <= 0)
         {
-            Debug.Log("No pathway available.");
+            Log.Print("no pathway available.");
             FindingPathway = false;
             return;
         }
@@ -81,20 +76,29 @@ public class AStarPathFinder : MonoBehaviour
         //When Current matches the end node, the pathway is ready to be reconstructed
         if(Current == End)
         {
-            Debug.Log("Pathway found after " + OpenSetIterations + " iterations.");
-            FindingPathway = false;
-            //Display the current path
-            List<Node> Pathway = ReconstructPathway();
-            Pathway.Remove(Start);
-            Pathway.Remove(End);
-            foreach (Node PathStep in Pathway)
+            //Announce the pathway has been found and how long it took to find
+            Log.Print("A* pathfinding complete after " + OpenSetIterations + " iterations.");
+
+            //Hide all nodes came from parent node indicators
+            GridManager.Instance.HideAllParentIndicators();
+
+            //Reconstruct the completed pathway
+            List<Node> FinalPathway = ReconstructPathway();
+            FinalPathway.Remove(Start);
+            FinalPathway.Remove(End);
+
+            //Change the types of all the nodes to display the pathway
+            foreach (Node PathStep in FinalPathway)
                 PathStep.SetType(NodeType.Pathway);
+
+            //Finalize the pathfinding process
+            FindingPathway = false;
             return;
         }
 
         //Remove the current node from the open set, then iterate over all of its neighbours
         OpenSet.Remove(Current);
-        List<Node> TraversableNeighbours = GridManager.Instance.GetTraversableNeighbours(Current, AllowDiagonalTravel);
+        List<Node> TraversableNeighbours = GridManager.Instance.GetTraversableNeighbours(Current);
         foreach (Node Neighbour in TraversableNeighbours)
         {
             //Check if its cheaper to travel across this neighbour
@@ -106,7 +110,7 @@ public class AStarPathFinder : MonoBehaviour
                 Neighbour.ToggleParentIndicator(true);
                 Neighbour.PointIndicator(Neighbour.GetDirection(Current));
                 Neighbour.GScore = TentativeGScore;
-                Neighbour.FScore = Neighbour.GScore + (AllowDiagonalTravel ? DiagonalHeuristic(Neighbour, End) : ManhattanHeuristic(Neighbour, End));
+                Neighbour.FScore = Neighbour.GScore + GridManager.FindHeuristic(Neighbour, End);
                 //Add this to the openset if its not already
                 if (!OpenSet.Contains(Neighbour))
                     OpenSet.Add(Neighbour);
@@ -149,31 +153,5 @@ public class AStarPathFinder : MonoBehaviour
 
         //Return the node that was found to have the lowest FScore
         return Current;
-    }
-
-    //Finds the sum of absolute values of differences in the two nodes X and Y coordinates
-    //This should be used when only allowed to move in 4 directions (N, E, S and W)
-    private float ManhattanHeuristic(Node Start, Node End)
-    {
-        //Add the differences between the X and Y positions together to find the heuristic value
-        int XDistance = (int)Mathf.Abs(Start.NodePos.x - End.NodePos.x);
-        int YDistance = (int)Mathf.Abs(Start.NodePos.y - End.NodePos.y);
-        return XDistance + YDistance;
-    }
-
-    //Finds the maximum of absolute values of differences in the two nodes X and Y coordinates
-    //This should be used when only allowed to move in 8 directions (N, NE, E, SE, S, SW, W and NW)
-    private float DiagonalHeuristic(Node Start, Node End)
-    {
-        return Mathf.Max(Mathf.Abs(Start.NodePos.x - End.NodePos.x),
-            Mathf.Abs(Start.NodePos.y - End.NodePos.y));
-    }
-
-    //Finds the distance betweren the two cells using the distance formula
-    //This should be used when allowed to move in any direction
-    private float EuclideanHeuristic(Node Start, Node End)
-    {
-        return Mathf.Sqrt((Start.NodePos.x - End.NodePos.x) * 2 +
-                    (Start.NodePos.y - End.NodePos.y) * 2);
     }
 }

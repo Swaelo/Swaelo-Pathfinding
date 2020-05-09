@@ -37,6 +37,9 @@ public class GridManager : MonoBehaviour
     public Vector2 QuickStartPos = new Vector2(2, 2);   //Position of path start node for quick setup
     public Vector2 QuickEndPos = new Vector2(14, 14);   //Pos of path end for quick setup
 
+    //UI component used to specify which pathfinding algorithm should be used
+    public Dropdown AlgorithmSelector;
+
     private void Start()
     {
         //Override with quick setup settings when quick setup is enabled
@@ -84,11 +87,21 @@ public class GridManager : MonoBehaviour
         //Make sure start and end nodes have been set
         if(PathStart == null || PathEnd == null)
         {
-            Debug.Log("Path ends need to be set before a path can be found.");
+            Log.Print("Path ends need to be set before a path can be found.");
             return;
         }
 
-        AStarPathFinder.Instance.FindPath(PathStart, PathEnd);
+        //Get the current algorithm selection
+        int AlgorithmSelection = AlgorithmSelector.value;
+        switch(AlgorithmSelection)
+        {
+            case (0):
+                AStarPathFinder.Instance.FindPath(PathStart, PathEnd);
+                break;
+            case (1):
+                DijkstrasPathFinder.Instance.FindPath(PathStart, PathEnd);
+                break;
+        }
     }
 
     //Sets up the level grid
@@ -136,7 +149,7 @@ public class GridManager : MonoBehaviour
     }
 
     //Returns a list of the nodes neighbours
-    public List<Node> GetNeighbours(Node Node, bool IncludeDiagonals = false)
+    public List<Node> GetNeighbours(Node Node)
     {
         //Create a new list to store all the neighboring nodes
         List<Node> Neighbours = new List<Node>();
@@ -151,28 +164,25 @@ public class GridManager : MonoBehaviour
         if (Node.HasNeighbour(Direction.West))
             Neighbours.Add(Node.GetNeighbour(Direction.West));
 
-        //Add diagonal neighbours if told to
-        if(IncludeDiagonals)
-        {
-            if (Node.HasNeighbour(Direction.NorthEast))
-                Neighbours.Add(Node.GetNeighbour(Direction.NorthEast));
-            if (Node.HasNeighbour(Direction.SouthEast))
-                Neighbours.Add(Node.GetNeighbour(Direction.SouthEast));
-            if (Node.HasNeighbour(Direction.SouthWest))
-                Neighbours.Add(Node.GetNeighbour(Direction.SouthWest));
-            if (Node.HasNeighbour(Direction.NorthWest))
-                Neighbours.Add(Node.GetNeighbour(Direction.NorthWest));
-        }
+        //Add diagonal neighbours
+        if (Node.HasNeighbour(Direction.NorthEast))
+            Neighbours.Add(Node.GetNeighbour(Direction.NorthEast));
+        if (Node.HasNeighbour(Direction.SouthEast))
+            Neighbours.Add(Node.GetNeighbour(Direction.SouthEast));
+        if (Node.HasNeighbour(Direction.SouthWest))
+            Neighbours.Add(Node.GetNeighbour(Direction.SouthWest));
+        if (Node.HasNeighbour(Direction.NorthWest))
+            Neighbours.Add(Node.GetNeighbour(Direction.NorthWest));
 
         //Return the final list of neighbouring nodes
         return Neighbours;
     }
 
     //Returns a list of the nodes traversable neighbours
-    public List<Node> GetTraversableNeighbours(Node Node, bool IncludeDiagonals = false)
+    public List<Node> GetTraversableNeighbours(Node Node)
     {
         //Start by just grabbing all the neighbours, regardless of traversability
-        List<Node> Neighbours = GetNeighbours(Node, IncludeDiagonals);
+        List<Node> Neighbours = GetNeighbours(Node);
 
         //Now sort through this list, finding any which are traversable, adding those to a new 2nd list
         List<Node> TraversableNeighbours = new List<Node>();
@@ -197,5 +207,69 @@ public class GridManager : MonoBehaviour
     public Node GetNode(Vector2 NodePos)
     {
         return Nodes[(int)NodePos.x][(int)NodePos.y].GetComponent<Node>();
+    }
+
+    //Hides all nodes came from parent node indicators
+    public void HideAllParentIndicators()
+    {
+        foreach(List<GameObject> Columns in Nodes)
+        {
+            foreach (GameObject Node in Columns)
+                Node.GetComponent<Node>().ToggleParentIndicator(false);
+        }
+    }
+
+    //Finds the sum of absolute values between two nodes
+    public static float FindHeuristic(Node A, Node B)
+    {
+        //Use manhattan heuristic if the nodes are directly adjacent to one another in the N, E, S or W direction
+        Direction NeighbourDirection = A.GetDirection(B);
+        switch(NeighbourDirection)
+        {
+            case (Direction.North):
+                return ManhattanHeuristic(A, B);
+            case (Direction.NorthEast):
+                return DiagonalHeuristic(A, B);
+            case (Direction.East):
+                return ManhattanHeuristic(A, B);
+            case (Direction.SouthEast):
+                return DiagonalHeuristic(A, B);
+            case (Direction.South):
+                return ManhattanHeuristic(A, B);
+            case (Direction.SouthWest):
+                return DiagonalHeuristic(A, B);
+            case (Direction.West):
+                return ManhattanHeuristic(A, B);
+            case (Direction.NorthWest):
+                return DiagonalHeuristic(A, B);
+        }
+        return Mathf.Infinity;
+    }
+
+    //Finds the sum of absolute values of differences in the two nodes X and Y coordinates
+    private static float ManhattanHeuristic(Node A, Node B)
+    {
+        int XDistance = (int)Mathf.Abs(A.NodePos.x - B.NodePos.x);
+        int YDistance = (int)Mathf.Abs(A.NodePos.y - B.NodePos.y);
+        return XDistance + YDistance;
+    }
+
+    //Finds the maximum of absolute values of differences in the two nodes X and Y coordinates
+    private static float DiagonalHeuristic(Node A, Node B)
+    {
+        return Mathf.Max(Mathf.Abs(A.NodePos.x - B.NodePos.x),
+            Mathf.Abs(A.NodePos.y - B.NodePos.y));
+    }
+
+    //Returns a list containing every node in the entire grid
+    public List<Node> GetCompleteNodeList()
+    {
+        List<Node> NodeList = new List<Node>();
+        foreach(List<GameObject> Columns in Nodes)
+        {
+            foreach (GameObject Node in Columns)
+                NodeList.Add(Node.GetComponent<Node>());
+        }
+        return NodeList;
     }
 }

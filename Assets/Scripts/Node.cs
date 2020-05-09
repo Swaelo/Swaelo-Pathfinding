@@ -11,8 +11,13 @@ public class Node : MonoBehaviour
     //Node type
     public NodeType Type = NodeType.Open;
 
-    //Pathfinding values
     public Vector2 NodePos; //This nodes position in the grid
+
+    //Dijkstras pathfinding values
+    public float Dist;
+    public Node Prev;
+
+    //A* Pathfinding values
     public Node Parent; //Node preceding this on the cheapest path from the start
     public float GScore;    //Cost to travel here from the start node along the shortest path
     public float FScore;    //Current best guess as to how short a path from start to finish can be if it goes through this node
