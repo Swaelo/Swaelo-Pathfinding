@@ -3,5 +3,6 @@ Library/
 Temp/
 obj/
 Logs/
+Builds/
 Assets/Textures/1x1Textures/
 Assets/Textures/1x1Textures.meta
