@@ -18,10 +18,10 @@ public class Log : MonoBehaviour
 
     public static void Print(string Message)
     {
-        //Move all the previous messages back a line
-        for (int i = Log.Instance.MessageLines.Length - 1; i > 1; i--)
+        //Move all the previous message back 1 line
+        for (int i = 7; i > 0; i--)
             Log.Instance.MessageLines[i].text = Log.Instance.MessageLines[i - 1].text;
-        //Display the new message in the first line
+        //Display the new message on the first line
         Log.Instance.MessageLines[0].text = Message;
     }
 }

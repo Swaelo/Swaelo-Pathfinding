@@ -32,6 +32,7 @@ public class GridManager : MonoBehaviour
     public Node PathEnd = null;
 
     //Quick setup for rapid testing
+    private bool GridSetup = false;
     public bool QuickSetup = false; //If true, immediatly setups up grid with specified size on scene load
     public Vector2 QuickSetupSize = new Vector2(15, 15);    //Size of grid for use with quick setup
     public Vector2 QuickStartPos = new Vector2(2, 2);   //Position of path start node for quick setup
@@ -39,6 +40,7 @@ public class GridManager : MonoBehaviour
 
     //UI component used to specify which pathfinding algorithm should be used
     public Dropdown AlgorithmSelector;
+    public PathFinder[] PathFinders;
 
     private void Start()
     {
@@ -84,6 +86,13 @@ public class GridManager : MonoBehaviour
     //UI button function to initiate pathfinding between the start and end nodes
     public void ClickFindPath()
     {
+        //Make sure the grid has been initialized
+        if(!GridSetup)
+        {
+            Log.Print("The grid needs to be setup first.");
+            return;
+        }
+
         //Make sure start and end nodes have been set
         if(PathStart == null || PathEnd == null)
         {
@@ -91,22 +100,23 @@ public class GridManager : MonoBehaviour
             return;
         }
 
-        //Get the current algorithm selection
-        int AlgorithmSelection = AlgorithmSelector.value;
-        switch(AlgorithmSelection)
-        {
-            case (0):
-                AStarPathFinder.Instance.FindPath(PathStart, PathEnd);
-                break;
-            case (1):
-                DijkstrasPathFinder.Instance.FindPath(PathStart, PathEnd);
-                break;
-        }
+        //Turn anyway pathway nodes from a previously calculated pathway back into open nodes
+        RemovePreviousPath();
+
+        PathFinders[AlgorithmSelector.value].FindPath(PathStart, PathEnd);
+    }
+
+    //Clears any current pathway
+    public void ClickClearPathButton()
+    {
+        RemovePreviousPath();
     }
 
     //Sets up the level grid
     private void InitializeGrid()
     {
+        GridSetup = true;
+
         //Reposition the camera so the entire grid will remain in view
         float MaxGridSize = Mathf.Max(GridSize.x, GridSize.y);
         Camera.main.transform.position = new Vector3(0f, MaxGridSize + 3, 0f);
@@ -194,6 +204,16 @@ public class GridManager : MonoBehaviour
         return TraversableNeighbours;
     }
 
+    //Turns any pathway nodes from a previously calculated pathway back into open nodes
+    private void RemovePreviousPath()
+    {
+        foreach(Node Node in GetCompleteNodeList())
+        {
+            if (Node.Type == NodeType.Pathway)
+                Node.SetType(NodeType.Open);
+        }
+    }
+
     //Checks if there exists a node with the given grid coordinates
     public bool NodeExists(Vector2 NodePos)
     {
@@ -271,5 +291,50 @@ public class GridManager : MonoBehaviour
                 NodeList.Add(Node.GetComponent<Node>());
         }
         return NodeList;
+    }
+
+    //Returns the node from the given set with the lowest FScore value
+    public Node FindCheapestNode(List<Node> Nodes)
+    {
+        //Start with the first node in the set
+        Node Cheapest = Nodes[0];
+
+        //Compare it with all the others, updating whenever we find a cheaper node
+        for(int i = 1; i < Nodes.Count; i++)
+        {
+            if (Nodes[i].FScore < Cheapest.FScore)
+                Cheapest = Nodes[i];
+        }
+
+        //Return the cheapest node
+        return Cheapest;
+    }
+
+    //Follows the parent chain from the end node all the way back to the start node to get the completed pathway
+    public List<Node> GetCompletedPathway(Node StartNode, Node EndNode)
+    {
+        //Create a new list to store the list of nodes which make up the finished pathway
+        List<Node> Pathway = new List<Node>();
+
+        //Follow the parents from the end all the way back to the start
+        Node CurrentNode = EndNode;
+        while(CurrentNode != StartNode)
+        {
+            Pathway.Add(CurrentNode);
+            CurrentNode = CurrentNode.Parent;
+        }
+
+        //Reverse the pathway, and make sure it doesnt contain the starting and ending nodes before returning it
+        Pathway.Reverse();
+        Pathway.Remove(StartNode);
+        Pathway.Remove(EndNode);
+        return Pathway;
+    }
+
+    //Checks if there is line of sight between two grid nodes
+    public bool LineOfSight(Node A, Node B)
+    {
+        //TODO: Implement some kind of LoS check
+        return true;
     }
 }

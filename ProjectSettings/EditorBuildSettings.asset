@@ -4,5 +4,8 @@
 EditorBuildSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 2
-  m_Scenes: []
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/PFScene.unity
+    guid: 5d6e1ccc1c206724ea433aab3c7681d5
   m_configObjects: {}
