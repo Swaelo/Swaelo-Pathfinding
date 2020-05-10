@@ -11,6 +11,7 @@ public class ThetaStarPathFinder : PathFinder
 {
     public override void FindPath(Node Start, Node End)
     {
+        //Announce the start of the search
         Log.Print("Starting Theta* path find...");
 
         //Reset iteration count
@@ -44,6 +45,7 @@ public class ThetaStarPathFinder : PathFinder
         //If the open set is empty, then no pathway could be found
         if(OpenSet.Count <= 0)
         {
+            //Print a failure message and reset the grid
             Log.Print("Unable to find a valid pathway using Theta* algorithm, after a total " + OpenSetIterations + " iterations.");
             FindingPathway = false;
             GridManager.Instance.HideAllParentIndicators();

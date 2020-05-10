@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Assets\Scripts\Algorithms\AStarPathFinder.cs" />
+    <Compile Include="Assets\Scripts\Algorithms\BreadthFirstPathFinder.cs" />
     <Compile Include="Assets\Scripts\Algorithms\DijkstrasPathFinder.cs" />
     <Compile Include="Assets\Scripts\Algorithms\PathFinder.cs" />
     <Compile Include="Assets\Scripts\Algorithms\ThetaStarPathFinder.cs" />

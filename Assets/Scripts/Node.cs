@@ -8,15 +8,15 @@ using UnityEngine;
 
 public class Node : MonoBehaviour
 {
-    //Node type
-    public NodeType Type = NodeType.Open;
-
+    public NodeType Type = NodeType.Open;   //This nodes type
     public Vector2 NodePos; //This nodes position in the grid
 
     //Pathfinding values
     public Node Parent; //Node preceding this on the cheapest path from the start
     public float GScore;    //Cost to travel here from the start node along the shortest path
     public float FScore;    //Current best guess as to how short a path from start to finish can be if it goes through this node
+    public bool Opened;     //Tracks if this node has been looked at yet
+    public bool Closed;     //Tracks if the node is finished being looked at
 
     //Materials and renderer components
     public NodeMaterial[] Materials;
@@ -45,6 +45,8 @@ public class Node : MonoBehaviour
         Parent = null;
         GScore = Mathf.Infinity;
         FScore = Mathf.Infinity;
+        Opened = false;
+        Closed = false;
     }
 
     //Sets the node to a new type

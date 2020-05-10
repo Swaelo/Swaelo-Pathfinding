@@ -11,30 +11,42 @@ public class AStarPathFinder : PathFinder
 {
     public override void FindPath(Node Start, Node End)
     {
+        //Announce the start of the search
         Log.Print("Starting A* pathfind...");
 
+        //Reset iteration counter
         OpenSetIterations = 0;
 
+        //Store path targets
         PathStart = Start;
         PathEnd = End;
 
+        //Reset all pathfinding values
         GridManager.Instance.ResetAllPathValues();
+
+        //Initialize the tracking list
         OpenSet = new List<Node>();
+        ClosedSet = new List<Node>();
 
+        //Give the starting node some initial values and place it into the open set
         Start.GScore = 0;
-        Start.FScore = GridManager.FindHeuristic(Start, End);
+        Start.FScore = 0;
         OpenSet.Add(Start);
+        Start.Opened = true;
 
+        //being the pathfinding process
         FindingPathway = true;
     }
 
     public override void IterateOpenSet()
     {
+        //Track how many iterations have taken place to find this pathway so far
         OpenSetIterations++;
 
         //If the open set is empty, then no pathway was able to be found
         if (OpenSet.Count <= 0)
         {
+            //Print a failure message and reset the grid
             Log.Print("Unable to find a valid pathway using A* algorithm.");
             FindingPathway = false;
             GridManager.Instance.HideAllParentIndicators();
@@ -43,9 +55,10 @@ public class AStarPathFinder : PathFinder
 
         //Get the cheapest node currently being stored in the open set
         Node Current = GridManager.Instance.FindCheapestNode(OpenSet);
+        OpenSet.Remove(Current);
 
         //When Current matches the end node, the pathway is ready to be reconstructed
-        if(Current == PathEnd)
+        if (Current == PathEnd)
         {
             //Announce the pathway has been found and how long it took to find
             Log.Print("A* pathfinding completed after " + OpenSetIterations + " iterations.");
@@ -65,18 +78,20 @@ public class AStarPathFinder : PathFinder
 
         //Remove the current node from the open set, then iterate over its neighbours
         OpenSet.Remove(Current);
-        foreach(Node Neighbour in GridManager.Instance.GetTraversableNeighbours(Current))
+        foreach (Node Neighbour in GridManager.Instance.GetTraversableNeighbours(Current))
         {
-            //Check if its cheaper to travel this way
-            if(Current.GScore < Neighbour.GScore)
+            if (Current.GScore < Neighbour.GScore)
             {
                 //Update this as the preferred way to travel
                 Neighbour.Parent = Current;
                 Neighbour.ToggleParentIndicator(true);
                 Neighbour.PointIndicator(Neighbour.GetDirection(Current));
+
+                //Update neighbours score values
                 Neighbour.GScore = Current.GScore;
                 Neighbour.FScore = Neighbour.GScore + GridManager.FindHeuristic(Neighbour, PathEnd);
-                //Add to the open set if its not already
+
+                //Add neighbour to open set if its not there already
                 if (!OpenSet.Contains(Neighbour))
                     OpenSet.Add(Neighbour);
             }

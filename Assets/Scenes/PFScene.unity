@@ -217,6 +217,7 @@ GameObject:
   - component: {fileID: 121272825}
   - component: {fileID: 121272826}
   - component: {fileID: 121272827}
+  - component: {fileID: 121272828}
   m_Layer: 0
   m_Name: System
   m_TagString: Untagged
@@ -252,6 +253,7 @@ MonoBehaviour:
   - {fileID: 121272825}
   - {fileID: 121272826}
   - {fileID: 121272827}
+  - {fileID: 121272828}
 --- !u!4 &121272823
 Transform:
   m_ObjectHideFlags: 0
@@ -324,6 +326,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e1e4549b444dfd24a9463aeae1881c0e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  PathStart: {fileID: 0}
+  PathEnd: {fileID: 0}
+  OpenSet: []
+  ClosedSet: []
+  OpenSetIterations: 0
+  FindingPathway: 0
+--- !u!114 &121272828
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 121272821}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce0f950c658940a478de8f9a7b96e633, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   PathStart: {fileID: 0}
@@ -681,6 +701,8 @@ MonoBehaviour:
     - m_Text: Dijkstra's Algorithm
       m_Image: {fileID: 0}
     - m_Text: Theta*
+      m_Image: {fileID: 0}
+    - m_Text: Breadth First
       m_Image: {fileID: 0}
   m_OnValueChanged:
     m_PersistentCalls:
